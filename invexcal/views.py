@@ -200,7 +200,7 @@ def save_new_data(static,dynamic):
         serializerposition.is_valid(raise_exception=True)
         if serializerposition.is_valid():
             serializerposition.save()
-    return Response({"Message":"Data saved successfully","status":True})
+    
 
 def update_data(static,dynamic,id):
     current_stock_price = static.get('current_stock_price')
@@ -261,6 +261,7 @@ def save(request):
         save_new_data(static,dynamic)
     else:
         update_data(static,dynamic,id)
+    return Response({"Message":"Data saved successfully","status":True})
 
 
 
