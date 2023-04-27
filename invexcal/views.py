@@ -41,8 +41,17 @@ def getData(request):
         dictt = {}
         final_dictt = {}
         l = []
-        strategy = OptionStrategyDup.objects.filter(ticker=ticker)
-        if strategy != []:
+#         strategy = OptionStrategyDup.objects.filter(ticker=ticker)
+        price = requests.get('https://cp1.invexwealth.com/api/v2/company-profile-quote?symbol='+ticker)
+            
+        price = price.json()['data']['price']
+        data = '{"date":"2023/04/06","symbol":"'+ticker+'","low_strike":"1","high_strike":"100"}'
+        expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
+
+        exp = list(expiry.json()['data'].keys())
+        dta = {i: list(expiry.json()['data'][i]["Strike"].values()) for i in expiry.json()['data'].keys()}
+        dicttt = {'ticker':ticker, 'expiry':exp, 'strike':dta, 'price':price}
+        if OptionStrategyDup.objects.filter(ticker=ticker).exists():
             data = OptionStrategyDup.objects.get(ticker=ticker)
             ids = data.id
             dictt['id'] = data.id
@@ -68,37 +77,14 @@ def getData(request):
 
                 l.append(dictt1)
             final_dictt['static'] = dictt
+            final_dictt['expire_list'] = dicttt
             final_dictt['dynamic'] = l
             return Response(final_dictt)
         
         else:
-            
-
-            price = requests.get('https://cp1.invexwealth.com/api/v2/company-profile-quote?symbol='+ticker)
-            
-            price = price.json()['data']['price']
-            data = '{"date":"2023/04/06","symbol":"'+ticker+'","low_strike":"1","high_strike":"100"}'
-            expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
-            
-            exp = list(expiry.json()['data'].keys())
-            dta = {i: list(expiry.json()['data'][i]["Strike"].values()) for i in expiry.json()['data'].keys()}
-            dictt = {'ticker':ticker, 'expiry':exp, 'strike':dta, 'price':price}
-            print(exp)
-
-            # frm = OptionStrategyDupForm(dictt)
-            # # frm1 = OptionStrategyPositionDupForm(dates=((a,a) for a in exp))
-            # frm1 = OptionStrategyPositionDupFormSet(form_kwargs={"dates":((a,a) for a in exp)})
-            
-            # context['form'] = frm
-            # context['formsets'] = frm1
-            # context['strike'] = json.dumps(dta)
-
-            # request.session['expiry_date'] = exp
-            # request.session['strike'] = json.dumps(dta)
-            # request.session['exp'] = exp
-            # request.session['dta'] = dta
-
-            return Response(dictt)
+            final_dictt = {}
+            final_dictt['expire_list'] = dicttt
+            return Response(final_dictt)
 
 @api_view(['POST','GET'])
 def calculate(request):
