@@ -6,3 +6,4 @@ sqlparse==0.4.2
 whitenoise==6.2.0
 djangorestframework
 requests
+django-cors-headers
