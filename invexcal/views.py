@@ -74,15 +74,15 @@ def getData(request):
         else:
             
 
-            # price = requests.get('https://cp1.invexwealth.com/api/v2/company-profile-quote?symbol='+ticker)
+            price = requests.get('https://cp1.invexwealth.com/api/v2/company-profile-quote?symbol='+ticker)
             
-            # price = price.json()['data']['price']
+            price = price.json()['data']['price']
             data = '{"date":"2023/04/06","symbol":"'+ticker+'","low_strike":"1","high_strike":"100"}'
             expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
             
             exp = list(expiry.json()['data'].keys())
             dta = {i: list(expiry.json()['data'][i]["Strike"].values()) for i in expiry.json()['data'].keys()}
-            dictt = {'ticker':ticker, 'expiry':exp, 'strike':dta}
+            dictt = {'ticker':ticker, 'expiry':exp, 'strike':dta, 'price':price}
             print(exp)
 
             # frm = OptionStrategyDupForm(dictt)
