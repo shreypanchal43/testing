@@ -134,7 +134,7 @@ def calculate(request):
     date1 = date.today()
     date11 = datetime.strptime(min_date, '%m/%d/%Y').date()
     timedelta = date11 - date1
-    timed = int(timedelta.days)
+    timed = int(timedelta.days) - 0.01
     
     prm = []
     debitcredit = []
@@ -202,7 +202,7 @@ def calc(static, dynamic):
     date1 = date.today()
     date11 = datetime.strptime(min_date, '%m/%d/%Y').date()
     timedelta = date11 - date1
-    timed = int(timedelta.days)
+    timed = int(timedelta.days) - 0.01
     prm = []
     debitcredit = []
     final_data = {}
