@@ -104,13 +104,13 @@ def getData(request):
             final_dictt['static'] = dictt
             final_dictt['dynamic'] = l
             final_dictt['expiry_strike_vol'] = call_put
-            final_dictt['expiry_date'] = dicttt
+            final_dictt['expiry_list'] = dicttt
             return Response(final_dictt)
         
         else:
             final_dictt = {}
             final_dictt['expiry_strike_vol'] = call_put
-            final_dictt['expiry_date'] = dicttt
+            final_dictt['expiry_list'] = dicttt
             return Response(final_dictt)
 
 @api_view(['POST','GET'])
