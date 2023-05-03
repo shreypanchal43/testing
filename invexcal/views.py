@@ -72,8 +72,8 @@ def getData(request):
         
         expiry_dict_put = {i: strike_mean for i in exp}
         expiry_dict_call = {i: Strike_Mean for i in exp}
-        call_put['Put'] = expiry_dict_put
-        call_put['Call'] = expiry_dict_call
+        call_put['put'] = expiry_dict_put
+        call_put['call'] = expiry_dict_call
 
         dicttt = {'ticker':ticker, 'expiry':exp, 'strike':dta, 'price':price}
         if OptionStrategyDup.objects.filter(ticker=ticker).exists():
