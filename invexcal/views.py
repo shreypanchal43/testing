@@ -54,6 +54,27 @@ def getData(request):
 
         exp = list(expiry.json()['data'].keys())
         dta = {i: list(expiry.json()['data'][i]["Strike"].values()) for i in expiry.json()['data'].keys()}
+
+        call = {i: list(expiry.json()['data'][i]["iVMean"].values()) for i in expiry.json()['data'].keys()}
+        strike_mean = {}
+        Strike_Mean = {}
+
+        call_put = {}
+
+        for i in expiry.json()['data'].keys():
+            Strike = expiry.json()['data'][i]["Strike"].values()
+            IVmean = expiry.json()['data'][i]["IVMean"].values()
+            ivmean = expiry.json()['data'][i]["iVMean"].values()
+        
+        for i,j,n in zip(Strike,ivmean,IVmean):
+            strike_mean[int(i)] = j
+            Strike_Mean[int(i)] = n
+        
+        expiry_dict_put = {i: strike_mean for i in exp}
+        expiry_dict_call = {i: Strike_Mean for i in exp}
+        call_put['Put'] = expiry_dict_put
+        call_put['Call'] = expiry_dict_call
+
         dicttt = {'ticker':ticker, 'expiry':exp, 'strike':dta, 'price':price}
         if OptionStrategyDup.objects.filter(ticker=ticker).exists():
             data = OptionStrategyDup.objects.get(ticker=ticker)
@@ -81,18 +102,22 @@ def getData(request):
 
                 l.append(dictt1)
             final_dictt['static'] = dictt
-            final_dictt['expire_list'] = dicttt
             final_dictt['dynamic'] = l
+            final_dictt['expiry_strike_vol'] = call_put
+            final_dictt['expiry_ticker_strike_price'] = dicttt
             return Response(final_dictt)
         
         else:
             final_dictt = {}
-            final_dictt['expire_list'] = dicttt
+            final_dictt['expiry_strike_vol'] = call_put
+            final_dictt['expiry_ticker_strike_price'] = dicttt
             return Response(final_dictt)
 
 @api_view(['POST','GET'])
 def calculate(request):
     static = request.data['static']
+
+    s_id = static['id']
     current_stock_price = static['current_stock_price']
     risk_free_rate = static['risk_free_rate']
     days_from_today = static['days_from_today']
@@ -107,9 +132,11 @@ def calculate(request):
     dynamic = request.data['dynamic']
     prm = []
     debitcredit = []
-    final_data = []
+    final_data = {}
+    
     for i in dynamic:
         context = {}
+        id = i['id']
         buysell = i['buysell']
         contract = i['contract']
         callput = i['callput']
@@ -136,6 +163,7 @@ def calculate(request):
         prm.append(premium)
         dbc = premium*contract*100
         debitcredit.append(dbc)
+        
         context['buysell'] = buysell
         context['expiry'] = expiry_date
         context['contract'] = contract
@@ -144,57 +172,127 @@ def calculate(request):
         context['premium'] = premium
         context['debit_credit'] = dbc
         context['strike'] = strike
-        final_data.append(context)
+        final_data[id] = context
     date_list = []
     for i in dynamic:
         date_list.append(i['expiry_date'])
     min_date = min(date_list, key=lambda x: datetime.strptime(x, '%m/%d/%Y'))
-    final_data.append(min_date)
+    final_data['end_date'] = min_date
     return Response(final_data)
 
+def calc(static, dynamic):
+    id = static['id']
+    current_stock_price = static['current_stock_price']
+    risk_free_rate = static['risk_free_rate']
+    days_from_today = static['days_from_today']
+    interval = static['interval']
+    start_date = static['start_date']
+    is_active = static['is_active']
+    startdate_object = datetime.strptime(start_date, '%d/%m/%Y').date()
+    date1 = date.today()
+    date11 = datetime.strptime(days_from_today, '%m/%d/%Y').date()
+    timedelta = date11 - date1
+    timed = int(timedelta.days)
+    prm = []
+    debitcredit = []
+    final_data = {}
+    
+    for i in dynamic:
+        context = {}
+        id = i['id1']
+        buysell = i['buysell']
+        contract = i['contract']
+        callput = i['callput']
+        strike = i['strike']
+        expiry_date = i['expiry_date']
+        volatility = i['volatility']
+        expdate_object = datetime.strptime(expiry_date, '%m/%d/%Y').date()
+        daystoexp = (expdate_object - startdate_object).days
+        if callput == 'call':
+            callput_flag = 'c'
+        elif callput == 'put':
+            callput_flag = 'p'
+        else:
+            callput_flag = 's'
+        time = (daystoexp - timed)/365
+        if callput_flag == 's':
+            premium = current_stock_price
+        else:
+            try:
+                premium = BlackScholes(callput_flag, current_stock_price, strike, time, risk_free_rate, volatility)
+            except:
+                s = 'Enter valid input'
+                return Response(s)
+        prm.append(premium)
+        dbc = premium*contract*100
+        debitcredit.append(dbc)
+        
+        # context['buysell'] = buysell
+        # context['expiry'] = expiry_date
+        # context['contract'] = contract
+        # context['callput'] = callput
+        # context['volatility'] = volatility
+        context['premium'] = premium
+        context['debit_credit'] = dbc
+        # context['strike'] = strike
+        final_data[id] = context
+    
+    return final_data
 
 def save_new_data(static,dynamic):
-    id = buysell.get('subid')
+    # data = calc(static, dynamic)
+    id = static.get('id')
     ticker = static.get('ticker')
     current_stock_price = static.get('current_stock_price')
     risk_free_rate = static.get('risk_free_rate')
     days_from_today = static.get('days_from_today')
     interval = static.get('interval')
     start_date = static.get('start_date')
+    dupdict = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
+                "interval":interval, "start_date":start_date}
 
+    serializerdup = optionStrategyDupSerializers(data=dupdict)
+    
+    if serializerdup.is_valid():
+        obj = serializerdup.save()
+    
+    p = obj.id
+    final_output_dict = {}
+    output_dict = {}
+    output_dict1 = {}
+    # id_status_list = OptionStrategyDup.objects.values_list('id')
+    # p = id_status_list[len(id_status_list)-1][0]
+ 
+    for i in dynamic:
+        id1 = i.get('id1')
+        subid = i.get('id')
+        buysell = i.get('buysell')
+        contract = i.get('contract')
+        callput = i.get('callput')
+        strike = i.get('strike')
+        expiry_date = i.get('expiry_date')
+        volatility = i.get('volatility')
+        premium = i.get('premium')
+        debit_credit = i.get('debit_credit')
 
-    if id == "None":
-        dupdict = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
-                    "interval":interval, "start_date":start_date}
+        #     debit_credit = i.get('debit_credit')
 
+        positiondict = {"buysell":buysell, "contract":contract, "callput":callput, "strike":strike, "expiry_date":expiry_date, "volatility":volatility, "premium":premium, "debit_credit":debit_credit}
+        positiondict["option_strategy_id"] = p
+        serializerposition = optionStrategyPositionSerializers(data=positiondict)
 
-        serializerdup = optionStrategyDupSerializers(data=dupdict)
-        
-        if serializerdup.is_valid():
-            serializerdup.save()
+        serializerposition.is_valid(raise_exception=True)
+        if serializerposition.is_valid():
+            serializerposition.save()
 
-        id_status_list = OptionStrategyDup.objects.values_list('id')
-        p = id_status_list[len(id_status_list)-1][0]
+        output_dict1[id1] = {"premium":premium, "debit_credit":debit_credit}
 
-        for i in dynamic:
-            buysell = i.get('buysell')
-            contract = i.get('contract')
-            callput = i.get('callput')
-            strike = i.get('strike')
-            expiry_date = i.get('expiry_date')
-            volatility = i.get('volatility')
-            premium = i.get('premium')
-            debit_credit = i.get('debit_credit')
-
-            positiondict = {"buysell":buysell, "contract":contract, "callput":callput, "strike":strike, "expiry_date":expiry_date, "volatility":volatility, "premium":premium, "debit_credit":debit_credit}
-            positiondict["option_strategy_id"] = p
-            serializerposition = optionStrategyPositionSerializers(data=positiondict)
-
-            serializerposition.is_valid(raise_exception=True)
-            if serializerposition.is_valid():
-                serializerposition.save()
-    else:
-        update_data(static, dynamic, id)
+    output_dict[p] = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
+                "interval":interval, "start_date":start_date}
+    final_output_dict['Static'] = output_dict
+    final_output_dict['Dynamic'] = output_dict1
+    # print(final_output_dict)
+    return final_output_dict
     
 
 def update_data(static,dynamic,id):
@@ -232,7 +330,7 @@ def update_data(static,dynamic,id):
                 serializerposition.save()
 
         else:
-            position =  OptionStrategyPositionDup.objects.get(pk=in_id)
+            position =  OptionStrategyPositionDup.objects.get(id=in_id)
             position.buysell = buysell
             position.contract = contract
             position.callput = callput
@@ -244,8 +342,6 @@ def update_data(static,dynamic,id):
             position.save()
     
 
-
-
 @api_view(['POST','GET'])
 def save(request):
     static = request.data['static']
@@ -253,114 +349,39 @@ def save(request):
     id = static.get('id')
 
     if id == None:
-        save_new_data(static,dynamic)
+        dictt = save_new_data(static,dynamic)
     else:
         update_data(static,dynamic,id)
-    return Response({"Message":"Data saved successfully","status":True})
+    return Response({"Message":"Data saved successfully","status":True, "Data":dictt})
 
-@api_view(['POST','GET'])
-def getVol(request):
-    context = {}
-    ticker = request.data['ticker']
-    call_put = request.data['call_put']
-    exp = request.data['expiry_date']
-    strike = request.data['strike']
-    today = date.today()
-    curr_date = today.strftime("%Y/%m/%d")
-    data = '{"date":"'+curr_date+'","symbol":"'+ticker+'","low_strike":"1","high_strike":"500"}'
-    expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
-    exp_data = expiry.json()
-    data = exp_data['data']
-    if exp in data:
-        d = data[exp]
-    if call_put == 'call':
-        for k,v in d['Strike'].items():
-            if v==strike:
-                key = k
-        for k,v in d['IVMean'].items():
-            if k==key:
-                vol = v
-    elif call_put == 'put':
-        for k,v in d['strike'].items():
-            if v==strike:
-                key = k
-        for k,v in d['ivMean'].items():
-            if k==key:
-                vol = v
-    else:
-        return Response("Please enter Call or Put")
-    context["expiry_date"] = exp
-    context["strike"] = strike
-    context['iv'] = vol
-    return Response(context)
-
-# def update(request,pk):
-    
-
-# Create your views here.
 # @api_view(['POST','GET'])
-# def optionDup(request):
-#     total = 0
-#     current_stock_price = request.data['current_stock_price']
-#     risk_free_rate = request.data['risk_free_rate']
-#     days_from_today = request.data['days_from_today']
-#     interval = request.data['interval']
-#     start_date = request.data['start_date']
-
-#     buysell = request.data['buysell']
-#     contract = request.data['contract']
-#     callput = request.data['callput']
-#     strike = request.data['strike']
-#     expiry_date = request.data['expiry_date']
-#     volatility = request.data['volatility']
-
-#     startdate_object = datetime.strptime(start_date, '%d/%m/%Y').date()
-#     expdate_object = datetime.strptime(expiry_date, '%m/%d/%Y').date()
-    
-#     daystoexp = (expdate_object - startdate_object).days
-
-#     if callput == 'call':
-#         callput_flag = 'c'
-#     elif callput == 'put':
-#         callput_flag = 'p'
-#     else:
-#         callput_flag = 's'
-
-#     time = (daystoexp - days_from_today)/365
-#                 # print(formset[-1])
-
-#     if callput_flag == 's':
-#         premium = current_stock_price
-#     else:
-#         premium = BlackScholes(callput_flag, current_stock_price, strike, time, risk_free_rate, volatility)
-
-#     dbc = premium*contract*100
-
-#     total = total + dbc
-
-#     dupdict = {"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
-#                "interval":interval, "start_date":start_date}
-    
-#     positiondict = {"buysell":buysell, "contract":contract, "callput":callput, "strike":strike, "expiry_date":expiry_date, "volatility":volatility, "premium":premium, "debit_credit":dbc, "total":total}
-
-#     serializerdup = optionStrategyDupSerializers(data=dupdict)
- 
-#     if serializerdup.is_valid():
-#         serializerdup.save()
-    
-#     id_status_list = OptionStrategyDup.objects.values_list('id')
-#     p = id_status_list[len(id_status_list)-1][0]
-  
-#     positiondict["option_strategy_id"] = p
-#     serializerposition = optionStrategyPositionSerializers(data=positiondict)
-
-#     serializerposition.is_valid(raise_exception=True)
-#     if serializerposition.is_valid():
-#         print("in")
-#         serializerposition.save()
-#         return Response(serializerposition.data, status=status.HTTP_201_CREATED)
-    
+# def getVol(request):
 #     context = {}
-#     context['dup'] = serializerdup.data
-#     context['position'] = serializerposition.data
-#     return Response(context)    
+#     ticker = request.data['ticker']
+#     call_put = request.data['call_put']
+#     exp = request.data['expiry_date']
+#     strike = request.data['strike']
+#     today = date.today()
+#     curr_date = today.strftime("%Y/%m/%d")
+#     data = '{"date":"'+curr_date+'","symbol":"'+ticker+'","low_strike":"1","high_strike":"500"}'
+#     expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
+#     exp_data = expiry.json()
+#     data = exp_data['data']
+
+#     if exp in data:
+#         d = data[exp]
+
+#     if call_put == 'call':
+#         key = [v for v in d['Strike'] if d['Strike'][v] == strike][0]
+#         vol = d['IVMean'][key]
+        
+#     elif call_put == 'put':
+#         key = [v for v in d['strike'] if d['strike'][v] == strike]
+#         vol = d['ivMean']
+        
+#     else:
+#         return Response("Please enter Call or Put")
+#     context["expiry_date"] = exp
+#     context["strike"] = strike
+#     context['iv'] = vol
+#     return Response(context)

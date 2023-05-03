@@ -7,6 +7,7 @@ urlpatterns = [
         path('getData/',views.getData,name='getData'),
         path('calc/',views.calculate,name='calculate'),
         path('save/',views.save,name='save'),
+        # path('getVol/',views.getVol,name='getVol'),
 
         # path('hist/',views.valuation,name='valuation')
 ]

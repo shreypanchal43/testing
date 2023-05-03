@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 isActive = [('non active', 'Non Active'), ('active', 'Active'), ('expired', 'Expired')]
-buysell = [('but', 'Buy'), ('sell','Sell')]
+buysell = [('buy', 'Buy'), ('sell','Sell')]
 callput = [('call', 'Call'), ('put', 'Put'), ('stock', 'Stock')]
 
 class OptionStrategyDup(models.Model):
@@ -12,7 +12,7 @@ class OptionStrategyDup(models.Model):
     is_active = models.CharField(max_length=30, choices=isActive, blank=True)
     current_stock_price = models.FloatField( blank=True)
     risk_free_rate = models.FloatField(null=True, blank=True)
-    days_from_today = models.FloatField(null=True, blank=True)
+    days_from_today = models.CharField(max_length=100, null=True, blank=True)
     days_from_today_date = models.DateField(null=True, default=None, blank=True)
     start_date = models.CharField(null=True, max_length=20, blank=True)
     end_date = models.DateTimeField(blank=True, null=True)
