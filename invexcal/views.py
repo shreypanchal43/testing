@@ -209,7 +209,7 @@ def calc(static, dynamic):
     
     for i in dynamic:
         context = {}
-        id = i['id1']
+        id = i['id']
         buysell = i['buysell']
         contract = i['contract']
         callput = i['callput']
@@ -274,7 +274,7 @@ def save_new_data(static,dynamic):
     # p = id_status_list[len(id_status_list)-1][0]
  
     for i in dynamic:
-        id1 = i.get('id1')
+        # id1 = i.get('id1')
         subid = i.get('id')
         buysell = i.get('buysell')
         contract = i.get('contract')
@@ -295,7 +295,7 @@ def save_new_data(static,dynamic):
         if serializerposition.is_valid():
             serializerposition.save()
 
-        output_dict1[id1] = {"premium":premium, "debit_credit":debit_credit}
+        output_dict1[subid] = {"premium":premium, "debit_credit":debit_credit}
 
     output_dict[p] = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
                 "interval":interval, "start_date":start_date}
