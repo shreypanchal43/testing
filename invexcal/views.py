@@ -104,13 +104,13 @@ def getData(request):
             final_dictt['static'] = dictt
             final_dictt['dynamic'] = l
             final_dictt['expiry_strike_vol'] = call_put
-            final_dictt['expiry_ticker_strike_price'] = dicttt
+            final_dictt['expiry_date'] = dicttt
             return Response(final_dictt)
         
         else:
             final_dictt = {}
             final_dictt['expiry_strike_vol'] = call_put
-            final_dictt['expiry_ticker_strike_price'] = dicttt
+            final_dictt['expiry_date'] = dicttt
             return Response(final_dictt)
 
 @api_view(['POST','GET'])
@@ -354,34 +354,34 @@ def save(request):
         update_data(static,dynamic,id)
     return Response({"Message":"Data saved successfully","status":True, "Data":dictt})
 
-# @api_view(['POST','GET'])
-# def getVol(request):
-#     context = {}
-#     ticker = request.data['ticker']
-#     call_put = request.data['call_put']
-#     exp = request.data['expiry_date']
-#     strike = request.data['strike']
-#     today = date.today()
-#     curr_date = today.strftime("%Y/%m/%d")
-#     data = '{"date":"'+curr_date+'","symbol":"'+ticker+'","low_strike":"1","high_strike":"500"}'
-#     expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
-#     exp_data = expiry.json()
-#     data = exp_data['data']
+@api_view(['POST','GET'])
+def getVol(request):
+    context = {}
+    ticker = request.data['ticker']
+    call_put = request.data['call_put']
+    exp = request.data['expiry_date']
+    strike = request.data['strike']
+    today = date.today()
+    curr_date = today.strftime("%Y/%m/%d")
+    data = '{"date":"'+curr_date+'","symbol":"'+ticker+'","low_strike":"1","high_strike":"500"}'
+    expiry = requests.post('https://cp2.invexwealth.com/option_chain', data=data)
+    exp_data = expiry.json()
+    data = exp_data['data']
 
-#     if exp in data:
-#         d = data[exp]
+    if exp in data:
+        d = data[exp]
 
-#     if call_put == 'call':
-#         key = [v for v in d['Strike'] if d['Strike'][v] == strike][0]
-#         vol = d['IVMean'][key]
+    if call_put == 'call':
+        key = [v for v in d['Strike'] if d['Strike'][v] == strike][0]
+        vol = d['IVMean'][key]
         
-#     elif call_put == 'put':
-#         key = [v for v in d['strike'] if d['strike'][v] == strike]
-#         vol = d['ivMean']
+    elif call_put == 'put':
+        key = [v for v in d['strike'] if d['strike'][v] == strike]
+        vol = d['ivMean']
         
-#     else:
-#         return Response("Please enter Call or Put")
-#     context["expiry_date"] = exp
-#     context["strike"] = strike
-#     context['iv'] = vol
-#     return Response(context)
+    else:
+        return Response("Please enter Call or Put")
+    context["expiry_date"] = exp
+    context["strike"] = strike
+    context['iv'] = vol
+    return Response(context)
