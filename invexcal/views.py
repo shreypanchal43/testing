@@ -116,20 +116,26 @@ def getData(request):
 @api_view(['POST','GET'])
 def calculate(request):
     static = request.data['static']
-
+    dynamic = request.data['dynamic']
+    
     s_id = static['id']
     current_stock_price = static['current_stock_price']
     risk_free_rate = static['risk_free_rate']
-    days_from_today = static['days_from_today']
     interval = static['interval']
     start_date = static['start_date']
     is_active = static['is_active']
+
+    date_list = []
+    for i in dynamic:
+        date_list.append(i['expiry_date'])
+    min_date = min(date_list, key=lambda x: datetime.strptime(x, '%m/%d/%Y'))
+
     startdate_object = datetime.strptime(start_date, '%d/%m/%Y').date()
     date1 = date.today()
-    date11 = datetime.strptime(days_from_today, '%m/%d/%Y').date()
+    date11 = datetime.strptime(min_date, '%m/%d/%Y').date()
     timedelta = date11 - date1
     timed = int(timedelta.days)
-    dynamic = request.data['dynamic']
+    
     prm = []
     debitcredit = []
     final_data = {}
@@ -173,10 +179,7 @@ def calculate(request):
         context['debit_credit'] = dbc
         context['strike'] = strike
         final_data[id] = context
-    date_list = []
-    for i in dynamic:
-        date_list.append(i['expiry_date'])
-    min_date = min(date_list, key=lambda x: datetime.strptime(x, '%m/%d/%Y'))
+    
     final_data['end_date'] = min_date
     return Response(final_data)
 
@@ -184,13 +187,20 @@ def calc(static, dynamic):
     id = static['id']
     current_stock_price = static['current_stock_price']
     risk_free_rate = static['risk_free_rate']
-    days_from_today = static['days_from_today']
     interval = static['interval']
     start_date = static['start_date']
     is_active = static['is_active']
+
+    date_list = []
+    for i in dynamic:
+        date_list.append(i['expiry_date'])
+
+    min_date = min(date_list, key=lambda x: datetime.strptime(x, '%m/%d/%Y'))
+
+
     startdate_object = datetime.strptime(start_date, '%d/%m/%Y').date()
     date1 = date.today()
-    date11 = datetime.strptime(days_from_today, '%m/%d/%Y').date()
+    date11 = datetime.strptime(min_date, '%m/%d/%Y').date()
     timedelta = date11 - date1
     timed = int(timedelta.days)
     prm = []
