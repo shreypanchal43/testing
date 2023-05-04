@@ -178,8 +178,6 @@ def calculate(request):
         context['premium'] = premium
         context['debit_credit'] = dbc
         context['strike'] = strike
-        final_data[id] = context
-    
     final_data['end_date'] = min_date
     return Response(final_data)
 
@@ -258,7 +256,7 @@ def save_new_data(static,dynamic):
     days_from_today = static.get('days_from_today')
     interval = static.get('interval')
     start_date = static.get('start_date')
-    dupdict = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
+    dupdict = {"id":id,"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
                 "interval":interval, "start_date":start_date}
 
     serializerdup = optionStrategyDupSerializers(data=dupdict)
@@ -268,13 +266,13 @@ def save_new_data(static,dynamic):
     
     p = obj.id
     final_output_dict = {}
-    output_dict = {}
-    output_dict1 = {}
+    final_output_list = []
+
     # id_status_list = OptionStrategyDup.objects.values_list('id')
     # p = id_status_list[len(id_status_list)-1][0]
- 
+    
     for i in dynamic:
-        # id1 = i.get('id1')
+        dynamic_output = {}
         subid = i.get('id')
         buysell = i.get('buysell')
         contract = i.get('contract')
@@ -293,14 +291,20 @@ def save_new_data(static,dynamic):
 
         serializerposition.is_valid(raise_exception=True)
         if serializerposition.is_valid():
-            serializerposition.save()
+            obj1 = serializerposition.save()
 
-        output_dict1[subid] = {"premium":premium, "debit_credit":debit_credit}
+        did = obj1.id
+        dynamic_output['id'] = did
+        dynamic_output['premium'] = premium
+        dynamic_output['debit_credit'] = debit_credit
 
-    output_dict[p] = {"ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
-                "interval":interval, "start_date":start_date}
-    final_output_dict['Static'] = output_dict
-    final_output_dict['Dynamic'] = output_dict1
+        final_output_list.append(dynamic_output)
+
+    final_output_dict['Dynamic'] = final_output_list
+
+    final_output_dict['Static'] = {"id":p, "ticker":ticker,"current_stock_price":current_stock_price, "risk_free_rate":risk_free_rate, "days_from_today":days_from_today,
+                 "interval":interval, "start_date":start_date}
+    
     # print(final_output_dict)
     return final_output_dict
     
