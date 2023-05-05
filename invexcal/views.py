@@ -118,7 +118,7 @@ def calculate(request):
     static = request.data['static']
     dynamic = request.data['dynamic']
     
-    s_id = static['id']
+    # s_id = static['id']
     current_stock_price = static['current_stock_price']
     risk_free_rate = static['risk_free_rate']
     interval = static['interval']
@@ -142,7 +142,7 @@ def calculate(request):
     prem_dc = []
     for i in dynamic:
         context = {}
-        id = i['id']
+        # id = i['id']
         buysell = i['buysell']
         contract = i['contract']
         callput = i['callput']
@@ -184,7 +184,7 @@ def calculate(request):
     return Response(final_data)
 
 def calc(static, dynamic):
-    id = static['id']
+    # id = static['id']
     current_stock_price = static['current_stock_price']
     risk_free_rate = static['risk_free_rate']
     interval = static['interval']
@@ -363,6 +363,7 @@ def save(request):
     static = request.data['static']
     dynamic = request.data['dynamic']
     id = static.get('id')
+    ticker = static['ticker']
 
     if id == None:
         dictt = save_new_data(static,dynamic)
