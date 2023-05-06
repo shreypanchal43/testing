@@ -170,14 +170,14 @@ def calculate(request):
         dbc = premium*contract*100
         debitcredit.append(dbc)
         
-        # context['buysell'] = buysell
-        # context['expiry'] = expiry_date
-        # context['contract'] = contract
-        # context['callput'] = callput
-        # context['volatility'] = volatility
+        context['buysell'] = buysell
+        context['expiry'] = expiry_date
+        context['contract'] = contract
+        context['callput'] = callput
+        context['volatility'] = volatility
         context['premium'] = premium
         context['debit_credit'] = dbc
-        # context['strike'] = strike
+        context['strike'] = strike
         prem_dc.append(context)
     final_data['calculated_data'] = prem_dc
     final_data['end_date'] = min_date
@@ -237,14 +237,14 @@ def calc(static, dynamic):
         dbc = premium*contract*100
         debitcredit.append(dbc)
         
-        # context['buysell'] = buysell
-        # context['expiry'] = expiry_date
-        # context['contract'] = contract
-        # context['callput'] = callput
-        # context['volatility'] = volatility
+        context['buysell'] = buysell
+        context['expiry'] = expiry_date
+        context['contract'] = contract
+        context['callput'] = callput
+        context['volatility'] = volatility
         context['premium'] = premium
         context['debit_credit'] = dbc
-        # context['strike'] = strike
+        context['strike'] = strike
         final_data[id] = context
     
     return final_data
